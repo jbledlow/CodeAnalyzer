@@ -1,0 +1,4 @@
+public class MyClass : YourClass, IYourInterface
+          {
+public int GetSomething(string info, int number)
+	{

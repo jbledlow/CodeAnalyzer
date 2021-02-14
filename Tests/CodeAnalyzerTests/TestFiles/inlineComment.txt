@@ -1,0 +1,4 @@
+/// <summary>
+/// Interface definition for a syntax detector
+/// </summary>
+public void MyFunc() { Console.Write("Hello World"); }

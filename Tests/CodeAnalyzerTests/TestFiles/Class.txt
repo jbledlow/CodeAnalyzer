@@ -1,0 +1,33 @@
+public class Scanner
+    {
+        private StreamReader _streamReader;
+        private string _currentPath;
+        private List<char> tokens = new List<char> { '\n', '{', '}' };
+
+        // Gets the next candidate string
+        public string GetNext(string filePath)
+        {
+            if (filePath != _currentPath)
+            {
+                _streamReader = new StreamReader(filePath);
+            }
+            var sb = new StringBuilder();
+
+            char c;
+            while (!IsToken(c=(char)_streamReader.Read()))
+            {
+                sb.Append(c);
+            }
+
+            return sb.Append(c).ToString();
+        }
+
+        public bool IsToken(char c)
+        {
+            if (tokens.Contains(c))
+            {
+                return true;
+            }
+            return false;
+        }
+    }

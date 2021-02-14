@@ -1,0 +1,6 @@
+/* this is a block
+* comment
+* that should be skipped
+* and it should print out public void MyFunc() {
+*/
+public void MyFunc() { Console.Write("Hello World"); }

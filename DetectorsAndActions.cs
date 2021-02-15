@@ -348,6 +348,14 @@ namespace CodeAnalyzer
         }
     }
 
+    public class SaveObject : IAction
+    {
+        public void DoAction(AnalysisObject analysisObject)
+        {
+            DataManager.SaveObject(analysisObject);
+        }
+    }
+
     public class CSAnalyzeParams : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -358,6 +366,26 @@ namespace CodeAnalyzer
             {
                 DataManager.CheckUsing(analysisObject.ObjectTokens.GetRange(parenStart + 1, (parenEnd - parenStart) - 1));
             }
+        }
+    }
+
+    public class CSCheckInheritance : IAction
+    {
+        public void DoAction(AnalysisObject analysisObject)
+        {
+            if (analysisObject.ObjectTokens.Contains(":"))
+            {
+                int index = analysisObject.ObjectTokens.IndexOf(":");
+                DataManager.CheckInheritance(analysisObject.ObjectTokens.GetRange(index+1, analysisObject.ObjectTokens.Count-index-1));
+            }
+        }
+    }
+
+    public class CSCheckAssociation : IAction
+    {
+        public void DoAction(AnalysisObject analysisObject)
+        {
+            DataManager.CheckAssociation(analysisObject.ObjectTokens);
         }
     }
 
@@ -377,17 +405,17 @@ namespace CodeAnalyzer
     {
         public AbstractClassScannerAnalysis CreateClassScannerAnalysisDetectors()
         {
-            throw new NotImplementedException();
+            return new CSClassScannerAnalysis();
         }
 
         public AbstractFunctionalAnalysis CreateFunctionalAnalysisDetectors()
         {
-            return new CSFunctionalAnlysis();
+            return new CSFunctionalAnalysis();
         }
 
         public AbstractRelationshipAnalysis CreateRelationshipAnalysisDetectors()
         {
-            throw new NotImplementedException();
+            return new CSClassRelationshipAnalysis();
         }
     }
 
@@ -406,16 +434,18 @@ namespace CodeAnalyzer
         IDetector GetDetectorChain();
     }
 
-    class CSFunctionalAnlysis : AbstractFunctionalAnalysis
+    class CSFunctionalAnalysis : AbstractFunctionalAnalysis
     {
         public IDetector GetDetectorChain()
         {
             //namespace detector
             IDetector namespaceDetector = new CSNamespaceDetector();
             namespaceDetector.AddAction(new AddScope());
+            namespaceDetector.AddAction(new SaveObject());
             // class detector
             IDetector classDetector = new CSClassDetector();
             classDetector.AddAction(new AddScope());
+            classDetector.AddAction(new SaveObject());
             // interface detector
             IDetector interfaceDetector = new CSInterfaceDetector();
             interfaceDetector.AddAction(new AddScope());
@@ -425,6 +455,106 @@ namespace CodeAnalyzer
             //function detector
             IDetector functionDetector = new CSFuncDetector();
             functionDetector.AddAction(new AddScope());
+            functionDetector.AddAction(new SaveObject());
+            // lambda detector
+            IDetector lambdaDetector = new CSLambdaDetector();
+            lambdaDetector.AddAction(new AddScope());
+            // conditional detector
+            IDetector conditionalDetector = new CSConditionalDetector();
+            conditionalDetector.AddAction(new AddScope());
+            // End of scope detector
+            IDetector endScopeDetector = new CSEndOfScopeDetector();
+            endScopeDetector.AddAction(new EndScope());
+            // statement detector
+            IDetector statementDetector = new CSStatementDetector();
+            statementDetector.AddAction(new ProcessStatement());
+            // tie up everything with the default
+            IDetector baseDetector = new CSBaseDetector();
+            namespaceDetector.SetNext(classDetector)
+                .SetNext(interfaceDetector)
+                .SetNext(propEnumDetector)
+                .SetNext(functionDetector)
+                .SetNext(lambdaDetector)
+                .SetNext(conditionalDetector)
+                .SetNext(endScopeDetector)
+                .SetNext(statementDetector)
+                .SetNext(baseDetector);
+            return namespaceDetector;
+        }
+    }
+
+    class CSClassRelationshipAnalysis : AbstractRelationshipAnalysis
+    {
+        public IDetector GetDetectorChain()
+        {
+            IDetector namespaceDetector = new CSNamespaceDetector();
+            namespaceDetector.AddAction(new AddScope());
+            //namespaceDetector.AddAction(new SaveObject());
+            // class detector
+            IDetector classDetector = new CSClassDetector();
+            classDetector.AddAction(new AddScope());
+            classDetector.AddAction(new CSCheckInheritance());
+            //classDetector.AddAction(new SaveObject());
+            // interface detector
+            IDetector interfaceDetector = new CSInterfaceDetector();
+            interfaceDetector.AddAction(new AddScope());
+            // properties and enums
+            IDetector propEnumDetector = new CSPropAndEnumDetector();
+            propEnumDetector.AddAction(new AddScope());
+            //function detector
+            IDetector functionDetector = new CSFuncDetector();
+            functionDetector.AddAction(new AddScope());
+            functionDetector.AddAction(new CSAnalyzeParams());
+            //functionDetector.AddAction(new SaveObject());
+            // lambda detector
+            IDetector lambdaDetector = new CSLambdaDetector();
+            lambdaDetector.AddAction(new AddScope());
+            // conditional detector
+            IDetector conditionalDetector = new CSConditionalDetector();
+            conditionalDetector.AddAction(new AddScope());
+            // End of scope detector
+            IDetector endScopeDetector = new CSEndOfScopeDetector();
+            endScopeDetector.AddAction(new EndScope());
+            // statement detector
+            IDetector statementDetector = new CSStatementDetector();
+            statementDetector.AddAction(new ProcessStatement());
+            statementDetector.AddAction(new CSCheckAssociation());
+            // tie up everything with the default
+            IDetector baseDetector = new CSBaseDetector();
+            namespaceDetector.SetNext(classDetector)
+                .SetNext(interfaceDetector)
+                .SetNext(propEnumDetector)
+                .SetNext(functionDetector)
+                .SetNext(lambdaDetector)
+                .SetNext(conditionalDetector)
+                .SetNext(endScopeDetector)
+                .SetNext(statementDetector)
+                .SetNext(baseDetector);
+            return namespaceDetector;
+        }
+    }
+
+    class CSClassScannerAnalysis : AbstractClassScannerAnalysis
+    {
+        public IDetector GetDetectorChain()
+        {
+            IDetector namespaceDetector = new CSNamespaceDetector();
+            namespaceDetector.AddAction(new AddScope());
+            namespaceDetector.AddAction(new SaveObject());
+            // class detector
+            IDetector classDetector = new CSClassDetector();
+            classDetector.AddAction(new AddScope());
+            classDetector.AddAction(new SaveObject());
+            // interface detector
+            IDetector interfaceDetector = new CSInterfaceDetector();
+            interfaceDetector.AddAction(new AddScope());
+            // properties and enums
+            IDetector propEnumDetector = new CSPropAndEnumDetector();
+            propEnumDetector.AddAction(new AddScope());
+            //function detector
+            IDetector functionDetector = new CSFuncDetector();
+            functionDetector.AddAction(new AddScope());
+            //functionDetector.AddAction(new SaveObject());
             // lambda detector
             IDetector lambdaDetector = new CSLambdaDetector();
             lambdaDetector.AddAction(new AddScope());

@@ -39,13 +39,25 @@ namespace CodeAnalyzer
             var dc = new DirectoryCrawler();
             _filePaths = dc.GetFiles(basePath, pattern, recursive);
 
-            AbstractDetectorFactory csFactory = new CSharpDetectorFactory();
-            baseDetector = csFactory.CreateFunctionalAnalysisDetectors().GetDetectorChain();
             
-            
+
+
             if (_filePaths.Count > 0)
             {
-                parseFiles();
+                AbstractDetectorFactory csFactory = new CSharpDetectorFactory();
+                if (Program.AnalyzeClasses)
+                {
+                    baseDetector = csFactory.CreateClassScannerAnalysisDetectors().GetDetectorChain();
+                    parseFiles();
+                    baseDetector = csFactory.CreateRelationshipAnalysisDetectors().GetDetectorChain();
+                    parseFiles();
+                }
+                else
+                {
+                    baseDetector = csFactory.CreateFunctionalAnalysisDetectors().GetDetectorChain();
+                    parseFiles();
+
+                }
             }
             else Console.WriteLine("No Files were found!");
             Console.WriteLine("Parsing Has Concluded!");
@@ -72,7 +84,7 @@ namespace CodeAnalyzer
                 baseDetector.DoTest(tokenList);
             }
 
-            Console.WriteLine("I have reached the end of this file!");
+            //Console.WriteLine("I have reached the end of this file!");
             
         }
     }

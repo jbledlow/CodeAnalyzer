@@ -155,11 +155,11 @@
     <Compile Include="CodeAnalysis.cs" />
     <Compile Include="DataManager.cs" />
     <Compile Include="DetectorsAndActions.cs" />
+    <Compile Include="Display.cs" />
     <Compile Include="FileManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Parser.cs" />
-    <Compile Include="FileManagement.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

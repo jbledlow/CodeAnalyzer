@@ -23,7 +23,7 @@ namespace CodeAnalyzer
     /// <summary>
     /// Driver class to parse command line options and start application
     /// </summary>
-    class Program
+    static class Program
     {
         private const string RECURSIVE = "/S";
         private const string CLASSANALYSIS = "/R";
@@ -33,6 +33,8 @@ namespace CodeAnalyzer
         public static bool AnalyzeClasses { get; set; } = false;
         public static bool WriteXMLFile { get; set; } = false;
 
+        private static string path;
+        private static string pattern;
         /// <summary>
         /// Main entry point to the program
         /// </summary>
@@ -58,6 +60,7 @@ namespace CodeAnalyzer
             {
                 // check options
                 parseArgs(options, fileArg, patternArg);
+                new Parser(path, pattern, IsRecursive);
                 return 0;
             });
 
@@ -68,6 +71,7 @@ namespace CodeAnalyzer
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                throw;
             }
         }
 
@@ -81,7 +85,7 @@ namespace CodeAnalyzer
             // check filename
             if (fileArg.HasValue())
             {
-
+                path = fileArg.Value();
             }
             else
             {
@@ -91,6 +95,7 @@ namespace CodeAnalyzer
             // chack patter(s)
             if (patternArg.HasValue())
             {
+                pattern = "*.cs";
                 foreach (var pattern in patternArg.Values)
                 {
 

@@ -40,68 +40,95 @@ namespace CodeAnalyzer
         }
         public static void AddScope(AnalysisObject analysisObject)
         {
-
             _currentScopeCount++;
             switch (analysisObject.ObjectType)
             {
                 case ScopeType.Namespace:
-                    _currentNameSpace = analysisObject.Name;
-                    scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
-                    saveNodeToXML(analysisObject, CreatePath());
+                    AddNamespaceScope(analysisObject);
                     break;
                 case ScopeType.Class:
-                    if (_currentClass != null)
-                    {
-                        analysisObject.Name = _currentClass = _currentClass + "." + analysisObject.Name;
-                        // need to update the object name
-
-                    } else
-                    {
-                        _currentClass = analysisObject.Name;
-                    }
-                    scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
-                    saveNodeToXML(analysisObject, CreatePath(_currentNameSpace));
+                    AddClassScope(analysisObject);
                     break;
                 case ScopeType.Function:
-                    if (_currentFunction != null || _currentClass == null)
-                    {
-                        Console.WriteLine("CurrentFunction is {0} and CurrentClass is {1}", _currentFunction, _currentClass);
-                        Console.WriteLine("{0} caused the exception", analysisObject.Name);
-                        throw new Exception("A function must be declared as a class member.");
-                    } else
-                    {
-                        _currentFunction = analysisObject.Name;
-                        scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
-                        _currentLineCount = 0;
-                        _currentScopeCount = 0;
-                    }
-                    saveNodeToXML(analysisObject, CreatePath(_currentNameSpace, _currentClass));
+                    AddFunctionScope(analysisObject);
                     break;
                 case ScopeType.Conditional:
-                    if (_currentFunction == null && _inProperty == false)
-                    {
-                        throw new Exception(String.Format("Conditional statements must be inside functions: {0}", string.Join(" ", analysisObject.ObjectTokens.ToArray())));
-                    } else
-                    {
-                        scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
-                        _currentScopeCount++;
-                        _currentLineCount++;
-                    }
+                    AddConditionalScope(analysisObject);
                     break;
                 case ScopeType.Lambda:
-                    scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
-                    _currentScopeCount++;
-                    _currentLineCount++;
+                    AddLambdaScope(analysisObject);
                     break;
                 case ScopeType.PropEnum:
-                    _inProperty = true;
+                    _inProperty = true; // for now I won't extract this to function
                     goto case ScopeType.Interface; // They really should allow fall through here.
                 case ScopeType.Interface:
-                    scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+                    scopeStack.Push((analysisObject.Name, analysisObject.ObjectType)); // will not extract for now
                     break;
                 default:
                     throw new ArgumentException("The provided type is not valid!");
+            }   
+        }
+
+        private static void AddLambdaScope(AnalysisObject analysisObject)
+        {
+            scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+            _currentScopeCount++;
+            _currentLineCount++;
+        }
+
+        private static void AddConditionalScope(AnalysisObject analysisObject)
+        {
+            if (_currentFunction == null && _inProperty == false)
+            {
+                throw new Exception(String.Format("Conditional statements must be inside functions: {0}", string.Join(" ", analysisObject.ObjectTokens.ToArray())));
             }
+            else
+            {
+                scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+                _currentScopeCount++;
+                _currentLineCount++;
+            }
+        }
+
+        private static void AddFunctionScope(AnalysisObject analysisObject)
+        {
+            if (_currentFunction != null || _currentClass == null)
+            {
+                Console.WriteLine("CurrentFunction is {0} and CurrentClass is {1}", _currentFunction, _currentClass);
+                Console.WriteLine("{0} caused the exception", analysisObject.Name);
+                throw new Exception("A function must be declared as a class member.");
+            }
+            else
+            {
+                _currentFunction = analysisObject.Name;
+                scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+                _currentLineCount = 0;
+                _currentScopeCount = 0;
+            }
+            //saveNodeToXML(analysisObject, CreatePath(_currentNameSpace, _currentClass));
+        }
+
+        private static void AddClassScope(AnalysisObject analysisObject)
+        {
+            if (_currentClass != null)
+            {
+                analysisObject.Name = _currentClass = _currentClass + "." + analysisObject.Name;
+                // need to update the object name
+
+            }
+            else
+            {
+                _currentClass = analysisObject.Name;
+            }
+            scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+            //saveNodeToXML(analysisObject, CreatePath(_currentNameSpace));
+        }
+
+        private static void AddNamespaceScope(AnalysisObject analysisObject)
+        {
+            _currentNameSpace = analysisObject.Name;
+            scopeStack.Push((analysisObject.Name, analysisObject.ObjectType));
+            //saveNodeToXML(analysisObject, CreatePath());
         }
 
         public static void RemoveScope()
@@ -127,7 +154,10 @@ namespace CodeAnalyzer
                     }
                     break;
                 case ScopeType.Function:
-                    updateFunctionAttributes(CreatePath(_currentNameSpace, _currentClass, _currentFunction), _currentScopeCount, _currentLineCount);
+                    if (!Program.AnalyzeClasses)
+                    {
+                        updateFunctionAttributes(CreatePath(_currentNameSpace, _currentClass, _currentFunction), _currentScopeCount, _currentLineCount);
+                    }
                     _currentFunction = null;
                     break;
                 case ScopeType.PropEnum:
@@ -251,8 +281,8 @@ namespace CodeAnalyzer
 
         public static void OutputData()
         {
-            xdoc.Save(Console.Out);
-            Console.WriteLine();
+            Display display = new Display();
+            display.DisplayData(xdoc);
         }
 
         // reset some data after finished with file
@@ -264,6 +294,91 @@ namespace CodeAnalyzer
             _currentNameSpace = null;
             _currentClass = null;
             _currentFunction = null;
+        }
+
+        internal static void SaveObject(AnalysisObject analysisObject)
+        {
+            switch (analysisObject.ObjectType)
+            {
+                case ScopeType.Namespace:
+                    saveNodeToXML(analysisObject, CreatePath());
+                    break;
+                case ScopeType.Class:
+                    saveNodeToXML(analysisObject, CreatePath(_currentNameSpace));
+                    break;
+                case ScopeType.Function:
+                    saveNodeToXML(analysisObject, CreatePath(_currentNameSpace, _currentClass));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        internal static void CheckInheritance(List<string> tokens)
+        {
+            // get list of classes
+            XmlNodeList classNodes = xdoc.GetElementsByTagName("Class");
+
+            foreach (XmlElement node in classNodes)
+            {
+                string id = node.Attributes["id"].Value;
+                if (tokens.Contains(id))
+                {
+                    string pathToCurrentClass = CreatePath(_currentNameSpace, _currentClass);
+                    var classNode = xdoc.SelectSingleNode(pathToCurrentClass);
+                    //XmlAttributeCollection xmlAttributeCollection = classNode.Attributes;
+                    if (classNode.Attributes["Inheritance"] == null)
+                    {
+                        XmlAttribute attr = xdoc.CreateAttribute("Inheritance");
+                        attr.Value = id;
+                        classNode.Attributes.Append(attr);
+                    }
+                    else
+                    {
+                        classNode.Attributes["Inheritance"].Value = classNode.Attributes["Inheritance"].Value + ", " + id;
+                    }
+                }
+            }
+        }
+
+        internal static void CheckAssociation(List<string> tokens)
+        {
+            if (_currentClass == null)
+            {
+                return;
+            }
+
+            if (_currentFunction != null)
+            {
+                CheckUsing(tokens);
+                return;
+            }
+            XmlNodeList classNodes = xdoc.GetElementsByTagName("Class");
+
+            foreach (XmlElement node in classNodes)
+            {
+                string id = node.Attributes["id"].Value;
+                if (tokens.Contains(id) && id != _currentClass)
+                {
+                    string pathToCurrentClass = CreatePath(_currentNameSpace, _currentClass);
+                    var classNode = xdoc.SelectSingleNode(pathToCurrentClass);
+                   
+                    //XmlAttributeCollection xmlAttributeCollection = classNode.Attributes;
+                    if (classNode.Attributes["Association"] == null)
+                    {
+                        XmlAttribute attr = xdoc.CreateAttribute("Association");
+                        attr.Value = id;
+                        classNode.Attributes.Append(attr);
+                    }
+                    else
+                    {
+                        if (!classNode.Attributes["Association"].Value.Contains(id))
+                        {
+                            classNode.Attributes["Association"].Value = classNode.Attributes["Association"].Value + ", " + id;
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -282,9 +397,25 @@ namespace CodeAnalyzer
             
             foreach (XmlElement node in classNodes)
             {
-                if (tokens.Contains(node.Attributes["id"].Value))
+                string id = node.Attributes["id"].Value;
+                if (tokens.Contains(id) && id != _currentClass)
                 {
-                    Console.WriteLine("Found a using");
+                    string pathToCurrentClass = CreatePath(_currentNameSpace, _currentClass);
+                    var classNode = xdoc.SelectSingleNode(pathToCurrentClass);
+                    //XmlAttributeCollection xmlAttributeCollection = classNode.Attributes;
+                    if (classNode.Attributes["Using"] == null)
+                    {
+                        XmlAttribute attr = xdoc.CreateAttribute("Using");
+                        attr.Value = id;
+                        classNode.Attributes.Append(attr);
+                    }
+                    else
+                    {
+                        if (!classNode.Attributes["Using"].Value.Contains(id))
+                        {
+                            classNode.Attributes["Using"].Value = classNode.Attributes["Using"].Value + ", " + id;
+                        }
+                    }
                 }
             }
         }

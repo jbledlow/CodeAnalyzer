@@ -281,8 +281,8 @@ namespace CodeAnalyzer
 
         public static void OutputData()
         {
-            xdoc.Save(Console.Out);
-            Console.WriteLine();
+            Display display = new Display();
+            display.DisplayData(xdoc);
         }
 
         // reset some data after finished with file
@@ -358,7 +358,7 @@ namespace CodeAnalyzer
             foreach (XmlElement node in classNodes)
             {
                 string id = node.Attributes["id"].Value;
-                if (tokens.Contains(id))
+                if (tokens.Contains(id) && id != _currentClass)
                 {
                     string pathToCurrentClass = CreatePath(_currentNameSpace, _currentClass);
                     var classNode = xdoc.SelectSingleNode(pathToCurrentClass);
@@ -398,7 +398,7 @@ namespace CodeAnalyzer
             foreach (XmlElement node in classNodes)
             {
                 string id = node.Attributes["id"].Value;
-                if (tokens.Contains(id))
+                if (tokens.Contains(id) && id != _currentClass)
                 {
                     string pathToCurrentClass = CreatePath(_currentNameSpace, _currentClass);
                     var classNode = xdoc.SelectSingleNode(pathToCurrentClass);

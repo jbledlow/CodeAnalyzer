@@ -373,10 +373,31 @@ namespace CodeAnalyzer
     {
         public void DoAction(AnalysisObject analysisObject)
         {
-            if (analysisObject.ObjectTokens.Contains(":"))
+            // assembly info can mess this up, delete any token range that starts with [ and ends with ]
+
+            List<string> goodTokens = new List<string>();
+            bool inAssemblyInfo = false;
+            foreach (var token in analysisObject.ObjectTokens)
             {
-                int index = analysisObject.ObjectTokens.IndexOf(":");
-                DataManager.CheckInheritance(analysisObject.ObjectTokens.GetRange(index+1, analysisObject.ObjectTokens.Count-index-1));
+                if (token.StartsWith("["))
+                {
+                    inAssemblyInfo = true;
+                }
+                else if (token.EndsWith("]") && inAssemblyInfo == true)
+                {
+                    inAssemblyInfo = false;
+                }
+                else if (inAssemblyInfo == false)
+                {
+                    goodTokens.Add(token);
+                }
+
+            }
+            
+            if (goodTokens.Contains(":"))
+            {
+                int index = goodTokens.IndexOf(":");
+                DataManager.CheckInheritance(goodTokens.GetRange(index+1, goodTokens.Count-index-1));
             }
         }
     }

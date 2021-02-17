@@ -11,9 +11,10 @@
  *      - Scanner
  *      
  * Dependencies:
+ *      - CodeAnalysis.cs interfaces
+ *      - DataManager
+ *      - AbstractDetectorFactory
  * 
- * This package depends on the CodeAnalsis package that provides an interaface to 
- * the syntax detectors
  */
 
 using System;
@@ -33,22 +34,29 @@ namespace CodeAnalyzer
         private List<string> _filePaths;
         private IDetector baseDetector;
        
-        // what if there are overloaded??
+        /// <summary>
+        /// Parser Constructor to initialize Parse and begin parsing
+        /// </summary>
+        /// <param name="basePath"></param>
+        /// <param name="pattern"></param>
+        /// <param name="recursive"></param>
         public Parser(string basePath, string pattern, bool recursive)
         {
+            /// get files
             var dc = new DirectoryCrawler();
             _filePaths = dc.GetFiles(basePath, pattern, recursive);
-
-            
-
-
+            // make sure files were returned
             if (_filePaths.Count > 0)
             {
+                Console.WriteLine("{0} Files were found.", _filePaths.Count);
+                // get detectors and parse files
                 AbstractDetectorFactory csFactory = new CSharpDetectorFactory();
                 if (Program.AnalyzeClasses)
                 {
+                    // get list of classes first
                     baseDetector = csFactory.CreateClassScannerAnalysisDetectors().GetDetectorChain();
                     parseFiles();
+                    // go back over for relationships
                     baseDetector = csFactory.CreateRelationshipAnalysisDetectors().GetDetectorChain();
                     parseFiles();
                 }
@@ -61,31 +69,35 @@ namespace CodeAnalyzer
             }
             else Console.WriteLine("No Files were found!");
             Console.WriteLine("Parsing Has Concluded!");
+            // output results
             DataManager.OutputData();
         }
 
+        /// <summary>
+        /// Parse Files in the current set of files
+        /// </summary>
         private void parseFiles()
         {
-            //Console.WriteLine(_filePaths.Count);
             foreach (var path in _filePaths)
             {
-                Console.WriteLine("Parsing {0}", path);
+                DataManager.SetCurrentFile(path);
                 parse(path);
                 DataManager.ResetData();
             }
         }
 
+        /// <summary>
+        /// parse a file at the given path
+        /// </summary>
+        /// <param name="path">path to file</param>
         public void parse(string path)
         {
             List<string> tokenList;
-            while(!(tokenList = _tokenSplitter.GetTokens(path)).Contains( "-1"))
+            // Ask for tokens until the end of the file is reached
+            while (!(tokenList = _tokenSplitter.GetTokens(path)).Contains("-1"))
             {
-                //Console.WriteLine
                 baseDetector.DoTest(tokenList);
             }
-
-            //Console.WriteLine("I have reached the end of this file!");
-            
         }
     }
 
@@ -96,17 +108,23 @@ namespace CodeAnalyzer
     public class TokenSplitter
     {
         private Scanner _scanner = new Scanner();
-        public TokenSplitter()
-        {
 
-        }
+        /// <summary>
+        /// Obtain a set of tokens from a file
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns>List of tokens</returns>
         public List<string> GetTokens(string filePath)
         {
-            //Console.WriteLine("Asking for tokens from {0}", filePath);
             var tokenString = _scanner.GetNext(filePath);
             return splitString(tokenString);
         }
 
+        /// <summary>
+        /// Split the string received from scanner into tokens
+        /// </summary>
+        /// <param name="inputString"></param>
+        /// <returns></returns>
         private List<string> splitString(string inputString)
         {
             List<string> outputString = new List<string>();
@@ -115,17 +133,20 @@ namespace CodeAnalyzer
             {
                 switch (c)
                 {
+                    // non-retained delimeters
                     case ' ':
-                    case ',':
                     case '\n':
+                    case ',':
                     case '\r':
                     case '\t':
                         if (sb.Length>0)
                         {
+                            // add token
                             outputString.Add(sb.ToString());
                             sb.Clear();
                         }
                         continue;
+                    // Retained delimeters
                     case ')':
                     case '(':
                     case '{':
@@ -140,6 +161,7 @@ namespace CodeAnalyzer
                         sb.Clear();
                         continue;
                     default:
+                        // all other chars
                         sb.Append(c);
                         continue;
                 }
@@ -161,15 +183,19 @@ namespace CodeAnalyzer
     {
         private StreamReader _streamReader;
         private string _currentPath;
-        private List<char> tokens = new List<char> { ';', '{', '}' };
+        private List<char> stopChars = new List<char> { ';', '{', '}' };
         private bool eof = false;
 
-        // Gets the next candidate string
+        /// <summary>
+        /// Get next set of characters up to a stopChar or end of file
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public string GetNext(string filePath)
         {
+            // check to see if new file
             if (filePath != _currentPath)
             {
-                //Console.WriteLine("Change to file {0}", filePath);
                 eof = false;
                 _streamReader = new StreamReader(filePath);
                 _currentPath = filePath;
@@ -179,6 +205,11 @@ namespace CodeAnalyzer
             return ScanChars(sb);
         }
 
+        /// <summary>
+        /// Scan file character by character looking for stop characters
+        /// </summary>
+        /// <param name="sb"></param>
+        /// <returns></returns>
         private string ScanChars(StringBuilder sb)
         {
             char c;
@@ -186,6 +217,7 @@ namespace CodeAnalyzer
             // read character and check to see if is token
             while (!IsToken(c = (char)_streamReader.Read()) && eof == false)
             {
+                // check if a string
                 if (c == '\x22' || c == '\x27')
                 {
                     SkipString(c);
@@ -201,13 +233,16 @@ namespace CodeAnalyzer
                 }
                 else
                 {
+                    // increment count of lines if a new line char
+                    if (c == '\n')
+                    {
+                        DataManager.AddLine();
+                    }
                     sb.Append(c);
                     b = c;
                 }
-                
                 eof = _streamReader.EndOfStream;
             }
-
             if (eof)
             {
                 // nothing more to be read from this file. Discard anthing left as it is not important
@@ -223,36 +258,47 @@ namespace CodeAnalyzer
         /// <param name="c">The type of quotation mark for which the method need to search.</param>
         private void SkipString(char c)
         {
+            char b = ' ';
             // just keep reading until the matching quote is found
-            while (_streamReader.Read() != c) ;
-            //{
-            //    _streamReader.Read();
-            //}
-            
-            
+            while ((b = (char)_streamReader.Read()) != c)
+            {
+                // must skip over escaped quote characters
+                if (b == '\\')
+                {
+                    _streamReader.Read();
+                }
+            }   
         }
 
-        // check to see if character is in the list of tokens.
+        /// <summary>
+        /// Test character against list of stop chars.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns></returns>
         public bool IsToken(char c)
         {
-            if (tokens.Contains(c))
+            if (stopChars.Contains(c))
             {
                 return true;
             }
             return false;
         }
 
-        // Skip all characters to end of comment
+        /// <summary>
+        /// Skip characters until the end of comment is found
+        /// </summary>
+        /// <param name="commentToken"></param>
         public void SkipComment(char commentToken)
         {
             char c = (char)_streamReader.Read();
             char b = commentToken;
-
+            // handle inline comments
             if (commentToken == '/')
             {
                 _streamReader.ReadLine();
                 return;
             }
+            // handle block comments
             while (!(b == '*' && c == '/'))
             {
                 // rotate and fetch new

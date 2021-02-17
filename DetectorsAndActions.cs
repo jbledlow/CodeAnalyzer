@@ -1,41 +1,90 @@
-﻿/*********************************************************************************
- *   DetectorsAndActions.cs: Package to contain syntax detectors and actions
- *   
- *   Author: Jonathan Ledlow
- *   Date: 10 Feb 2021
- *   
- *   
- *   Updates:
- *      - Initial Dev
+﻿/**
+ * DetectorsAndActions.cs
+ * Original Author: Jonathan Ledlow
+ * Date Last Modified: 17 Feb 2021
+ * 
+ * Summary:
+ * 
+ * This package contains all the detectors and actions defined for source code analysis.
+ * Currently only contains those associated with C# analysis. Also included is an abstract
+ * factory as a public interface for retreiving sets of detectors and actions based on
+ * the type of analysis desired
+ * 
+ * Contents:
+ *      - Detectors
+ *          - BaseDetector
+ *          - CSClassDetector
+ *          - CSInterfaceDetector
+ *          - CSStatementDetector
+ *          - CSFuncDetector
+ *          - CSConditionalDetector
+ *          - CSNamespaceDetector
+ *          - CSEndOfScopeDetector
+ *          - CSPropAndEnumDetector
+ *          - CSLambdaDetector
+ *      - Actions
+ *          - AddScope
+ *          - EndScope
+ *          - ProcessStatment
+ *          - SaveObject
+ *          - CSAnalyzeParams
+ *          - CSCheckInheritance
+ *          - CSCheckAssociation
+ *      - Factory
+ *          - AbstractDetectorFactory
+ *          - CSharpDetectorFactory
+ *          - AbstractFunctionalAnalysis
+ *          - AbstractRelationshipAnalysis
+ *          - AbstractClassScannerAnalysis
+ *          - CSFunctionalAnalysis
+ *          - CSClassRelationshipAnalysis
+ *          - CSClassScannerAnalysis
+ *          
+ * 
+ * Dependencies:
+ *      The actions depend on the DataManager class. The detectors depend on the 
+ *      AnalysisObject Class
+ * 
+ * 
+ * Change History:
  *      - Added Factory class
  *      - Refactored class names to relate specifically to C#
- *      - Added detector for interface
- ********************************************************************************/
+ *      - Added detectors for interface, lambda, props, and enums
+ * 
+ */
+
+
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-
 
 namespace CodeAnalyzer
 {
     ///////////////////////////////////////////////////////////////////////////
     ///                       Detectors                                     ///
     ///////////////////////////////////////////////////////////////////////////
+
+    /// <summary>
+    /// Base Detector class
+    /// </summary>
     public class CSBaseDetector : IDetector
     {
         protected List<IAction> ActionsList = new List<IAction>(); //{ get; set; }
         //public DataManager dataManager { get; set; }
         protected IDetector _nextDetector;
-
+        /// <summary>
+        /// Add an action to the list of actions
+        /// </summary>
+        /// <param name="action"></param>
         public virtual void AddAction(IAction action)
         {
             ActionsList.Add(action);
         }
-
+        /// <summary>
+        /// Perform all actions in action list
+        /// </summary>
+        /// <param name="analysisObject"></param>
         public virtual void DoActions(AnalysisObject analysisObject)
         {
             foreach (var action in ActionsList)
@@ -43,13 +92,20 @@ namespace CodeAnalyzer
                 action.DoAction(analysisObject);
             }
         }
-
+        /// <summary>
+        /// Test the tokens for patterns
+        /// </summary>
+        /// <param name="tokens"></param>
         public virtual void DoTest(List<string> tokens)
         {
+            // Default test to indicate that no other detector identified the object
             Console.WriteLine("Unable to Identify the following: {0}", string.Join(" ",tokens.ToArray()));
-            //return true;
         }
-
+        /// <summary>
+        /// Set the next detector to call for chain of command
+        /// </summary>
+        /// <param name="detector"></param>
+        /// <returns>Returns the detector to allow chaining of commands</returns>
         public virtual IDetector SetNext(IDetector detector)
         {
             this._nextDetector = detector;
@@ -69,7 +125,6 @@ namespace CodeAnalyzer
                 string name = tokens[tokens.IndexOf("class") + 1];
                 AnalysisObject analysisObject = new AnalysisObject(DataManager.ScopeType.Class, tokens, name);
                 this.DoActions(analysisObject);
-                //return true;
             } else
             {
                 _nextDetector?.DoTest(tokens);
@@ -78,6 +133,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Class for detecting interfaces in a list of tokens
+    /// </summary>
     public class CSInterfaceDetector: CSBaseDetector
     {
         public override void DoTest(List<string> tokens)
@@ -85,10 +143,8 @@ namespace CodeAnalyzer
             if (tokens.Contains("interface") && tokens.Contains("{"))
             {
                 string name = tokens[tokens.IndexOf("interface") + 1];
-                // For now, I am just treating is as a conditional
                 AnalysisObject analysisObject = new AnalysisObject(DataManager.ScopeType.Interface, tokens, name);
                 this.DoActions(analysisObject);
-                //eturn true;
             }
             else
             {
@@ -248,6 +304,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Class for detecting the end of a scope, e.g. a }
+    /// </summary>
     public class CSEndOfScopeDetector : CSBaseDetector
     {
         public override void DoTest(List<string> tokens)
@@ -267,6 +326,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Class for detecting Properties and Enumerations
+    /// </summary>
     public class CSPropAndEnumDetector : CSBaseDetector
     {
         public override void DoTest(List<string> tokens)
@@ -292,6 +354,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Class for detecting a lambda expression
+    /// </summary>
     public class CSLambdaDetector : CSBaseDetector
     {
         public override void DoTest(List<string> tokens)
@@ -332,6 +397,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Signify the end of a scope
+    /// </summary>
     public class EndScope : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -340,6 +408,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Alert DataManager that a statement was found
+    /// </summary>
     public class ProcessStatement : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -348,6 +419,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Save the object
+    /// </summary>
     public class SaveObject : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -356,6 +430,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Extract function parameters for checking using relationships
+    /// </summary>
     public class CSAnalyzeParams : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -369,6 +446,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Extract inheritance tokens
+    /// </summary>
     public class CSCheckInheritance : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -383,11 +463,11 @@ namespace CodeAnalyzer
                 {
                     inAssemblyInfo = true;
                 }
-                else if (token.EndsWith("]") && inAssemblyInfo == true)
+                if (token.EndsWith("]") && inAssemblyInfo == true)
                 {
                     inAssemblyInfo = false;
                 }
-                else if (inAssemblyInfo == false)
+                if (inAssemblyInfo == false)
                 {
                     goodTokens.Add(token);
                 }
@@ -402,6 +482,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Check statements for class association
+    /// </summary>
     public class CSCheckAssociation : IAction
     {
         public void DoAction(AnalysisObject analysisObject)
@@ -415,6 +498,10 @@ namespace CodeAnalyzer
     ///////////////////////////////////////////////////////////////////////////
     ///                        Factory                                      ///
     ///////////////////////////////////////////////////////////////////////////
+
+    /// <summary>
+    /// Abstract factor to create detectors and actions
+    /// </summary>
     public interface AbstractDetectorFactory
     {
         AbstractFunctionalAnalysis CreateFunctionalAnalysisDetectors();
@@ -422,6 +509,9 @@ namespace CodeAnalyzer
         AbstractClassScannerAnalysis CreateClassScannerAnalysisDetectors();
     }
 
+    /// <summary>
+    /// Factory class to create C# detectors and actions
+    /// </summary>
     public class CSharpDetectorFactory : AbstractDetectorFactory
     {
         public AbstractClassScannerAnalysis CreateClassScannerAnalysisDetectors()
@@ -440,21 +530,33 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Abstract product for Function Analysis detectors and actions
+    /// </summary>
     public interface AbstractFunctionalAnalysis
     {
         IDetector GetDetectorChain();
     }
 
+    /// <summary>
+    /// Abstract product for Class relationship detectors and actions
+    /// </summary>
     public interface AbstractRelationshipAnalysis
     {
         IDetector GetDetectorChain();
     }
 
+    /// <summary>
+    /// Abstract product for scanning files for class names
+    /// </summary>
     public interface AbstractClassScannerAnalysis
     {
         IDetector GetDetectorChain();
     }
 
+    /// <summary>
+    /// Concrete function analysis product
+    /// </summary>
     class CSFunctionalAnalysis : AbstractFunctionalAnalysis
     {
         public IDetector GetDetectorChain()
@@ -504,6 +606,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Concrete class relationship analysis product
+    /// </summary>
     class CSClassRelationshipAnalysis : AbstractRelationshipAnalysis
     {
         public IDetector GetDetectorChain()
@@ -526,7 +631,7 @@ namespace CodeAnalyzer
             IDetector functionDetector = new CSFuncDetector();
             functionDetector.AddAction(new AddScope());
             functionDetector.AddAction(new CSAnalyzeParams());
-            //functionDetector.AddAction(new SaveObject());
+            functionDetector.AddAction(new SaveObject());
             // lambda detector
             IDetector lambdaDetector = new CSLambdaDetector();
             lambdaDetector.AddAction(new AddScope());
@@ -555,6 +660,9 @@ namespace CodeAnalyzer
         }
     }
 
+    /// <summary>
+    /// Concrete class scanner product
+    /// </summary>
     class CSClassScannerAnalysis : AbstractClassScannerAnalysis
     {
         public IDetector GetDetectorChain()

@@ -1,23 +1,32 @@
 ﻿/**
  * CodeAnalysis.cs
- * This package is intended to be used as a part of the CodeAnalyzer Project
- * for CSE 681 Software Modelling
+ * Original Author: Jonathan Ledlow
+ * Date Last Modified: 17 Feb 2021
  * 
  * Summary:
  * 
  * This package defines the interface to which detectors and actions will conform.
+ * A detector is used to test for specific language patters and may have a list
+ * of actions that are triggered. Actions are used to perform a specific type
+ * of processing. Often, these actions will be used to interact with a form of
+ * data management.
+ * 
+ * Contents:
+ *      public interface IDetector
+ *      public interface IAction
  * 
  * Dependencies:
  * 
  * The interfaces contained herein depend only upon .NET system libraries
  * 
+ * Change History:
+ *      - Initial implementation
+ *      - Refactored IDetector.DoActions and IAction.DoAction to accept AnalysisObject
+ *      - Added IDetector.SetNext to inplement chain of responsibility
+ * 
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CodeAnalyzer
 {

@@ -34,6 +34,18 @@ namespace CodeAnalyzer
         private List<string> _filePaths;
         private IDetector baseDetector;
        
+        public Parser(string filePath)
+        {
+            _filePaths = new List<string>() { filePath };
+            AbstractDetectorFactory factory = new CSharpDetectorFactory();
+            baseDetector = factory.CreateFunctionalAnalysisDetectors().GetDetectorChain();
+            parseFiles();
+
+            var saveDirectory = Path.GetDirectoryName(filePath);
+            var outputName = Path.GetFileNameWithoutExtension(filePath) + ".xml";
+            DataManager.OutputData(Path.Combine(saveDirectory, outputName));
+        }
+
         /// <summary>
         /// Parser Constructor to initialize Parse and begin parsing
         /// </summary>
@@ -81,7 +93,15 @@ namespace CodeAnalyzer
             foreach (var path in _filePaths)
             {
                 DataManager.SetCurrentFile(path);
-                parse(path);
+                try
+                {
+                    parse(path);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("An error occured when parsing file {0}", path);
+                    Console.WriteLine("Skipping file.");
+                }
                 DataManager.ResetData();
             }
         }
@@ -90,7 +110,7 @@ namespace CodeAnalyzer
         /// parse a file at the given path
         /// </summary>
         /// <param name="path">path to file</param>
-        public void parse(string path)
+        private void parse(string path)
         {
             List<string> tokenList;
             // Ask for tokens until the end of the file is reached
@@ -102,7 +122,7 @@ namespace CodeAnalyzer
     }
 
     /// <summary>
-    /// The TokenSplitter class's responsiility is to request data from the scanner and split the
+    /// The TokenSplitter class's responsibility is to request data from the scanner and split the
     /// resulting string into separate tokens for analysis
     /// </summary>
     public class TokenSplitter
@@ -245,6 +265,7 @@ namespace CodeAnalyzer
             }
             if (eof)
             {
+                _streamReader.Close();
                 // nothing more to be read from this file. Discard anthing left as it is not important
                 return "-1";
             }
@@ -275,7 +296,7 @@ namespace CodeAnalyzer
         /// </summary>
         /// <param name="c"></param>
         /// <returns></returns>
-        public bool IsToken(char c)
+        private bool IsToken(char c)
         {
             if (stopChars.Contains(c))
             {
@@ -288,7 +309,7 @@ namespace CodeAnalyzer
         /// Skip characters until the end of comment is found
         /// </summary>
         /// <param name="commentToken"></param>
-        public void SkipComment(char commentToken)
+        private void SkipComment(char commentToken)
         {
             char c = (char)_streamReader.Read();
             char b = commentToken;

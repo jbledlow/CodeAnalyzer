@@ -7,6 +7,7 @@ namespace CodeAnalyzerTests
     [TestClass]
     public class ScannerTests
     {
+        /* IsTOken is now private
         [TestMethod]
         public void Scanner_IsToken_ShouldReturnTrueOnOpenCurlyBrace()
         {
@@ -34,7 +35,7 @@ namespace CodeAnalyzerTests
             Scanner scanner = new Scanner();
             Assert.IsTrue(scanner.IsToken(';'));
         }
-
+        */
         [TestMethod]
         public void Scanner_GetNext_ShouldReturnClassSignature()
         {

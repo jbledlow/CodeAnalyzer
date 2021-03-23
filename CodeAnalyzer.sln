@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeAnalyzer", "CodeAnalyze
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeAnalyzerTests", "Tests\CodeAnalyzerTests\CodeAnalyzerTests.csproj", "{0C75DE1E-9B9C-41A6-974A-0E6B287134CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeAnalyzerUI", "..\CodeAnalyzerUI\CodeAnalyzerUI.csproj", "{1755AD01-196D-48C0-A6C2-700F3EE953C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalysisService", "..\AnalysisService\AnalysisService.csproj", "{674B503E-4385-45F9-A1CD-2E15641A6F5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{0C75DE1E-9B9C-41A6-974A-0E6B287134CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C75DE1E-9B9C-41A6-974A-0E6B287134CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C75DE1E-9B9C-41A6-974A-0E6B287134CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1755AD01-196D-48C0-A6C2-700F3EE953C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1755AD01-196D-48C0-A6C2-700F3EE953C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1755AD01-196D-48C0-A6C2-700F3EE953C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1755AD01-196D-48C0-A6C2-700F3EE953C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{674B503E-4385-45F9-A1CD-2E15641A6F5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{674B503E-4385-45F9-A1CD-2E15641A6F5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{674B503E-4385-45F9-A1CD-2E15641A6F5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{674B503E-4385-45F9-A1CD-2E15641A6F5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

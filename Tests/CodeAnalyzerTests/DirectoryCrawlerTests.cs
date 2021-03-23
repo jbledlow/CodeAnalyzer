@@ -17,7 +17,7 @@ namespace CodeAnalyzerTests
         [ClassInitialize]
         public static void BeforeClass(TestContext tc)
         {
-            path = Path.Combine(Directory.GetCurrentDirectory(), "temp/");
+            path = Path.Combine(Directory.GetCurrentDirectory(), "temp\\");
             Directory.CreateDirectory(path);
             files = new List<string> { Path.Combine(path,"testfile1.cs"), Path.Combine(path,"testfile2.cs") };
             foreach(string file in files)

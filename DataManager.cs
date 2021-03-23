@@ -399,6 +399,13 @@ namespace CodeAnalyzer
             }
         }
 
+        public static void OutputData(string filePath)
+        {
+            //Display display = new Display();
+            //display.DisplayData(xdoc);
+            xdoc.Save(filePath);
+        }
+
         /// <summary>
         /// Reset DataManager information.
         /// </summary>

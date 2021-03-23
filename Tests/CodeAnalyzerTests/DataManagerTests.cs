@@ -46,7 +46,7 @@ namespace CodeAnalyzerTests
             }
             Assert.IsTrue(exceptionThrown);
         }
-
+        /* Replaced with generic
         [TestMethod]
         public void DataManager_saveNameSpacetoXML_ShouldPrintOut()
         {
@@ -57,6 +57,6 @@ namespace CodeAnalyzerTests
             string result = Convert.ToString(dm.InvokeStatic("CreatePath", "myNamespace", "myClass", "myFunc"));
             dm.InvokeStatic("updateFunctionAttributes", result, 3, 10);
             
-        }
+        } */
     }
 }

@@ -202,6 +202,7 @@ namespace CodeAnalyzer
                 !tokens.Contains("switch") &&
                 !tokens.Contains("catch") &&
                 !tokens.Contains("=>") &&
+                !tokens.Contains("new") &&
                 (tokens.IndexOf("(") < tokens.IndexOf(")") && tokens.IndexOf(")") < tokens.IndexOf("{")))
             {
                 string name = tokens[tokens.IndexOf("(") - 1];
@@ -366,6 +367,24 @@ namespace CodeAnalyzer
                 AnalysisObject analysisObject = new AnalysisObject(DataManager.ScopeType.Lambda, tokens, "Lambda");
                 this.DoActions(analysisObject);
                 //return true;
+            }
+            else
+            {
+                _nextDetector?.DoTest(tokens);
+            }
+        }
+    }
+
+    public class CSInitializerDetector : CSBaseDetector
+    {
+        public override void DoTest(List<string> tokens)
+        {
+            if (tokens.Contains("new") && tokens.Contains("{") && tokens.Contains("(") && tokens.Contains(")"))
+            {
+                Console.WriteLine("Found Initializer");
+                tokens.ForEach(t => Console.Write(t));
+                AnalysisObject analysisObject = new AnalysisObject(DataManager.ScopeType.Lambda, tokens, "Lambda");
+                this.DoActions(analysisObject);
             }
             else
             {
@@ -585,6 +604,9 @@ namespace CodeAnalyzer
             // conditional detector
             IDetector conditionalDetector = new CSConditionalDetector();
             conditionalDetector.AddAction(new AddScope());
+            // initializer detector
+            IDetector initializerDetector = new CSInitializerDetector();
+            initializerDetector.AddAction(new AddScope());
             // End of scope detector
             IDetector endScopeDetector = new CSEndOfScopeDetector();
             endScopeDetector.AddAction(new EndScope());
@@ -599,6 +621,7 @@ namespace CodeAnalyzer
                 .SetNext(functionDetector)
                 .SetNext(lambdaDetector)
                 .SetNext(conditionalDetector)
+                .SetNext(initializerDetector)
                 .SetNext(endScopeDetector)
                 .SetNext(statementDetector)
                 .SetNext(baseDetector);
